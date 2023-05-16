@@ -71,16 +71,17 @@ class Monitor:
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
 
-        process_df = pd.DataFrame(process_list, columns=['Name', 'PID', 'Status', 'Memory usage (Bytes)', 'Disk usage (Bytes)'])
+        process_df = pd.DataFrame(process_list,
+                                  columns=['Name', 'PID', 'Status', 'Memory usage (Bytes)', 'Disk usage (Bytes)'])
         self.processes_frame.destroy()
-        self.processes_frame = ttk.Frame(self.root)
+        self.processes_frame = tk.Frame(self.root)
         self.processes_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        self.table = pt = Table(self.processes_frame, dataframe=process_df)
-        pt.show()
+        self.table = Table(self.processes_frame, dataframe=process_df, showtoolbar=True, showstatusbar=True)
+        self.table.show()
         self.root.after(1000, self.update_processes)
 
-def run(self):
-    tk.mainloop()
+    def run(self):
+        tk.mainloop()
 
 if __name__ == "__main__":
     monitor = Monitor()
