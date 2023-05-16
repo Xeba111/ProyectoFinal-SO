@@ -1,9 +1,12 @@
 import tkinter as tk
+from tkinter import ttk
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import psutil
 import time
 import threading
+import pandas as pd
+from pandastable import Table
 
 class Monitor:
     def __init__(self):
@@ -16,7 +19,12 @@ class Monitor:
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        self.processes_frame = ttk.Frame(self.root)
+        self.processes_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
         self.update_plots()
+        self.update_processes()
 
     def update_plots(self):
         self.cpu_plot.cla()
@@ -46,11 +54,33 @@ class Monitor:
         self.net_plot.set_xticklabels(['Sent', 'Received'])
 
         self.canvas.draw()
-        self.root.after(1000, self.update_plots)  # refresh every 1s
+        self.root.after(1000, self.update_plots)
 
-    def run(self):
-        tk.mainloop()
+    def update_processes(self):
+        process_list = []
 
+        for proc in psutil.process_iter(['pid', 'name', 'status', 'memory_info', 'io_counters']):
+            try:
+                pid = proc.info['pid']
+                name = proc.info['name']
+                status = proc.info['status']
+                mem_info = proc.info['memory_info'].rss
+                io_counters = proc.info['io_counters']
+                disk_usage = io_counters.read_bytes + io_counters.write_bytes
+                process_list.append([name, pid, status, mem_info, disk_usage])
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+
+        process_df = pd.DataFrame(process_list, columns=['Name', 'PID', 'Status', 'Memory usage (Bytes)', 'Disk usage (Bytes)'])
+        self.processes_frame.destroy()
+        self.processes_frame = ttk.Frame(self.root)
+        self.processes_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        self.table = pt = Table(self.processes_frame, dataframe=process_df)
+        pt.show()
+        self.root.after(1000, self.update_processes)
+
+def run(self):
+    tk.mainloop()
 
 if __name__ == "__main__":
     monitor = Monitor()
