@@ -1,11 +1,13 @@
 import sys
+import threading
 import time
 import psutil
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QLabel, QScrollArea, \
     QTableWidget, QTableWidgetItem
 from PyQt5.QtCore import QTimer, QCoreApplication
 import pyqtgraph as pg
-
+from PyQt5 import QtCore
+import threading
 
 class App(QMainWindow):
     def __init__(self):
@@ -68,14 +70,14 @@ class MyTableWidget(QWidget):
 
         # Create timer
         self.timer = QTimer()
-        self.timer.timeout.connect(self.update_info)
+        self.timer.timeout.connect(self.update_info_thread)
         self.timer.start(1000)
 
         self.graph_timer = QTimer()
-        self.graph_timer.timeout.connect(self.update_graph)
-        self.graph_timer.start(30000)
+        self.graph_timer.timeout.connect(self.update_graph_thread)
+        self.graph_timer.start(1000)
 
-        self.history_length = 3600 // 30  # 1 hour / 30 seconds
+        self.history_length = 3600 // 1  # 1 hour / 30 seconds
         self.cpu_history = [0] * self.history_length
         self.ram_history = [0] * self.history_length
         self.disk_history = [0] * self.history_length
@@ -87,6 +89,9 @@ class MyTableWidget(QWidget):
         return bytes / 1024 / 1024
 
     def update_info(self):
+        threading.Thread(target=self.update_info_thread()).start()
+
+    def update_info_thread(self):
         cpu_usage = psutil.cpu_percent()
         ram_usage = psutil.virtual_memory().percent
         disk_usage = psutil.disk_usage('/').percent
@@ -114,7 +119,11 @@ class MyTableWidget(QWidget):
                            f'Disk Usage: {disk_usage}%\n'
                            f'Network Usage: Sent {net_sent:.2f} MB / Received {net_recv:.2f} MB\n')
 
+
     def update_graph(self):
+        threading.Thread(target=self.update_info_thread()).start()
+
+    def update_graph_thread(self):
         self.cpu_history.append(psutil.cpu_percent())
         self.cpu_history.pop(0)
 
@@ -142,6 +151,7 @@ class MyTableWidget(QWidget):
 
 
 if __name__ == '__main__':
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_X11InitThreads)
     app = QApplication(sys.argv)
     ex = App()
     sys.exit(app.exec_())
