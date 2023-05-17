@@ -95,18 +95,9 @@ class MyTableWidget(QWidget):
         net_sent = self.bytes_to_mb(net_io_counters.bytes_sent)
         net_recv = self.bytes_to_mb(net_io_counters.bytes_recv)
 
-        self.table.setColumnCount(6)  # Adjust column count for new data
-        self.table.setHorizontalHeaderLabels(['Name', 'PID', 'CPU (%)', 'Threads', 'RAM (MB)', 'Disk I/O (MB)'])
         self.table.setRowCount(0)
 
         for proc in psutil.process_iter(['name', 'pid', 'memory_info', 'io_counters']):
-            try:
-                proc_cpu_usage = proc.cpu_percent(interval=0.1)
-                proc_num_threads = proc.num_threads()
-            except psutil.AccessDenied:
-                proc_cpu_usage = 'N/A'
-                proc_num_threads = 'N/A'
-
             mem_info = self.bytes_to_mb(proc.info['memory_info'].rss)
             io_info_read = self.bytes_to_mb(proc.info['io_counters'].read_bytes)
             io_info_write = self.bytes_to_mb(proc.info['io_counters'].write_bytes)
@@ -115,10 +106,8 @@ class MyTableWidget(QWidget):
             self.table.insertRow(row_position)
             self.table.setItem(row_position, 0, QTableWidgetItem(proc.info["name"]))
             self.table.setItem(row_position, 1, QTableWidgetItem(str(proc.info["pid"])))
-            self.table.setItem(row_position, 2, QTableWidgetItem(str(proc_cpu_usage)))
-            self.table.setItem(row_position, 3, QTableWidgetItem(str(proc_num_threads)))
-            self.table.setItem(row_position, 4, QTableWidgetItem(f'{mem_info:.2f}'))
-            self.table.setItem(row_position, 5, QTableWidgetItem(f'{io_info_read:.2f}/{io_info_write:.2f}'))
+            self.table.setItem(row_position, 2, QTableWidgetItem(f'{mem_info:.2f}'))
+            self.table.setItem(row_position, 3, QTableWidgetItem(f'{io_info_read:.2f}/{io_info_write:.2f}'))
 
         self.label.setText(f'CPU Usage: {cpu_usage}%\n'
                            f'RAM Usage: {ram_usage}%\n'
