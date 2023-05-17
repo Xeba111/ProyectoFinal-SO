@@ -1,6 +1,7 @@
 import sys
 import psutil
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QLabel, QScrollArea
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QLabel, QScrollArea, \
+    QTableWidget, QTableWidgetItem
 from PyQt5.QtCore import QTimer, QCoreApplication
 
 
@@ -36,9 +37,13 @@ class MyTableWidget(QWidget):
         # Create first tab
         self.tab1.layout = QVBoxLayout(self)
         self.label = QLabel()
+        self.table = QTableWidget()
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(['Name', 'PID', 'RAM (MB)', 'Disk I/O (MB)'])
         self.scroll = QScrollArea()
-        self.scroll.setWidget(self.label)
+        self.scroll.setWidget(self.table)
         self.scroll.setWidgetResizable(True)
+        self.tab1.layout.addWidget(self.label)
         self.tab1.layout.addWidget(self.scroll)
         self.tab1.setLayout(self.tab1.layout)
 
@@ -63,19 +68,24 @@ class MyTableWidget(QWidget):
         net_sent = self.bytes_to_mb(net_io_counters.bytes_sent)
         net_recv = self.bytes_to_mb(net_io_counters.bytes_recv)
 
-        processes_info = ''
+        self.table.setRowCount(0)
+
         for proc in psutil.process_iter(['name', 'pid', 'memory_info', 'io_counters']):
             mem_info = self.bytes_to_mb(proc.info['memory_info'].rss)
             io_info_read = self.bytes_to_mb(proc.info['io_counters'].read_bytes)
             io_info_write = self.bytes_to_mb(proc.info['io_counters'].write_bytes)
-            processes_info += f'Name: {proc.info["name"]}, PID: {proc.info["pid"]}, RAM: {mem_info:.2f} MB, Disk IO: {io_info_read:.2f}/{io_info_write:.2f} MB\n'
+
+            row_position = self.table.rowCount()
+            self.table.insertRow(row_position)
+            self.table.setItem(row_position, 0, QTableWidgetItem(proc.info["name"]))
+            self.table.setItem(row_position, 1, QTableWidgetItem(str(proc.info["pid"])))
+            self.table.setItem(row_position, 2, QTableWidgetItem(f'{mem_info:.2f}'))
+            self.table.setItem(row_position, 3, QTableWidgetItem(f'{io_info_read:.2f}/{io_info_write:.2f}'))
 
         self.label.setText(f'CPU Usage: {cpu_usage}%\n'
                            f'RAM Usage: {ram_usage}%\n'
                            f'Disk Usage: {disk_usage}%\n'
-                           f'Network Usage: Sent {net_sent:.2f} MB / Received {net_recv:.2f} MB\n'
-                           f'Running Processes:\n{processes_info}\n')
-
+                           f'Network Usage: Sent {net_sent:.2f} MB / Received {net_recv:.2f} MB\n')
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
