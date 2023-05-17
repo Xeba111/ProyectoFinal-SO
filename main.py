@@ -1,8 +1,10 @@
 import sys
+import time
 import psutil
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QLabel, QScrollArea, \
     QTableWidget, QTableWidgetItem
 from PyQt5.QtCore import QTimer, QCoreApplication
+import pyqtgraph as pg
 
 
 class App(QMainWindow):
@@ -47,6 +49,19 @@ class MyTableWidget(QWidget):
         self.tab1.layout.addWidget(self.scroll)
         self.tab1.setLayout(self.tab1.layout)
 
+        # Create second tab
+        self.tab2.layout = QVBoxLayout(self)
+        self.cpu_plot = pg.PlotWidget(title="CPU Usage (%)")
+        self.ram_plot = pg.PlotWidget(title="RAM Usage (%)")
+        self.disk_plot = pg.PlotWidget(title="Disk Usage (%)")
+        self.network_plot = pg.PlotWidget(title="Network Bandwidth Usage (MB)")
+
+        self.tab2.layout.addWidget(self.cpu_plot)
+        self.tab2.layout.addWidget(self.ram_plot)
+        self.tab2.layout.addWidget(self.disk_plot)
+        self.tab2.layout.addWidget(self.network_plot)
+        self.tab2.setLayout(self.tab2.layout)
+
         # Add tabs to widget
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
@@ -55,6 +70,18 @@ class MyTableWidget(QWidget):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_info)
         self.timer.start(1000)
+
+        self.graph_timer = QTimer()
+        self.graph_timer.timeout.connect(self.update_graph)
+        self.graph_timer.start(30000)
+
+        self.history_length = 3600 // 30  # 1 hour / 30 seconds
+        self.cpu_history = [0] * self.history_length
+        self.ram_history = [0] * self.history_length
+        self.disk_history = [0] * self.history_length
+        self.network_sent_history = [0] * self.history_length
+        self.network_recv_history = [0] * self.history_length
+        self.timestamps = list(range(-self.history_length, 0, 1))
 
     def bytes_to_mb(self, bytes):
         return bytes / 1024 / 1024
@@ -86,6 +113,33 @@ class MyTableWidget(QWidget):
                            f'RAM Usage: {ram_usage}%\n'
                            f'Disk Usage: {disk_usage}%\n'
                            f'Network Usage: Sent {net_sent:.2f} MB / Received {net_recv:.2f} MB\n')
+
+    def update_graph(self):
+        self.cpu_history.append(psutil.cpu_percent())
+        self.cpu_history.pop(0)
+
+        self.ram_history.append(psutil.virtual_memory().percent)
+        self.ram_history.pop(0)
+
+        self.disk_history.append(psutil.disk_usage('/').percent)
+        self.disk_history.pop(0)
+
+        net_io_counters = psutil.net_io_counters()
+        net_sent = self.bytes_to_mb(net_io_counters.bytes_sent)
+        net_recv = self.bytes_to_mb(net_io_counters.bytes_recv)
+
+        self.network_sent_history.append(net_sent)
+        self.network_sent_history.pop(0)
+
+        self.network_recv_history.append(net_recv)
+        self.network_recv_history.pop(0)
+
+        self.cpu_plot.plot(self.timestamps, self.cpu_history, clear=True)
+        self.ram_plot.plot(self.timestamps, self.ram_history, clear=True)
+        self.disk_plot.plot(self.timestamps, self.disk_history, clear=True)
+        self.network_plot.plot(self.timestamps, self.network_sent_history, pen='r', name='Sent', clear=True)
+        self.network_plot.plot(self.timestamps, self.network_recv_history, pen='b', name='Received')
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
