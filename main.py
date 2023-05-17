@@ -1,12 +1,10 @@
 import sys
-import threading
 import time
 import psutil
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QLabel, QScrollArea, \
     QTableWidget, QTableWidgetItem
 from PyQt5.QtCore import QTimer, QCoreApplication
 import pyqtgraph as pg
-from PyQt5 import QtCore
 
 
 class App(QMainWindow):
@@ -89,9 +87,6 @@ class MyTableWidget(QWidget):
         return bytes / 1024 / 1024
 
     def update_info(self):
-        threading.Thread(target=self.update_info_thread()).start()
-
-    def update_info_thread(self):
         cpu_usage = psutil.cpu_percent()
         ram_usage = psutil.virtual_memory().percent
         disk_usage = psutil.disk_usage('/').percent
@@ -100,39 +95,19 @@ class MyTableWidget(QWidget):
         net_sent = self.bytes_to_mb(net_io_counters.bytes_sent)
         net_recv = self.bytes_to_mb(net_io_counters.bytes_recv)
 
-        self.table.setColumnCount(5)  # Add another column for CPU usage
-        self.table.setHorizontalHeaderLabels(['Name', 'PID', 'CPU (%)', 'RAM (MB)', 'Disk I/O (MB)'])
-
-        # Get initial CPU times
-        initial_cpu_times = {proc.pid: proc.cpu_times() for proc in psutil.process_iter(['pid', 'cpu_times'])}
-
-        time.sleep(1)  # Wait a second
-
-        # Get final CPU times and calculate usage
-        final_cpu_times = {proc.pid: proc.cpu_times() for proc in psutil.process_iter(['pid', 'cpu_times'])}
-        cpu_usages = {}
-        for pid, final_times in final_cpu_times.items():
-            initial_times = initial_cpu_times.get(pid)
-            if initial_times is not None:
-                # Calculate CPU usage as a percentage of total system CPU time
-                cpu_usages[pid] = ((final_times.user - initial_times.user) + (
-                            final_times.system - initial_times.system)) / psutil.cpu_count()
-
         self.table.setRowCount(0)
 
         for proc in psutil.process_iter(['name', 'pid', 'memory_info', 'io_counters']):
             mem_info = self.bytes_to_mb(proc.info['memory_info'].rss)
             io_info_read = self.bytes_to_mb(proc.info['io_counters'].read_bytes)
             io_info_write = self.bytes_to_mb(proc.info['io_counters'].write_bytes)
-            cpu_usage_proc = cpu_usages.get(proc.info['pid'], 0)
 
             row_position = self.table.rowCount()
             self.table.insertRow(row_position)
             self.table.setItem(row_position, 0, QTableWidgetItem(proc.info["name"]))
             self.table.setItem(row_position, 1, QTableWidgetItem(str(proc.info["pid"])))
-            self.table.setItem(row_position, 2, QTableWidgetItem(f'{cpu_usage_proc:.2f}'))
-            self.table.setItem(row_position, 3, QTableWidgetItem(f'{mem_info:.2f}'))
-            self.table.setItem(row_position, 4, QTableWidgetItem(f'{io_info_read:.2f}/{io_info_write:.2f}'))
+            self.table.setItem(row_position, 2, QTableWidgetItem(f'{mem_info:.2f}'))
+            self.table.setItem(row_position, 3, QTableWidgetItem(f'{io_info_read:.2f}/{io_info_write:.2f}'))
 
         self.label.setText(f'CPU Usage: {cpu_usage}%\n'
                            f'RAM Usage: {ram_usage}%\n'
@@ -167,7 +142,6 @@ class MyTableWidget(QWidget):
 
 
 if __name__ == '__main__':
-    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_X11InitThreads)
     app = QApplication(sys.argv)
     ex = App()
     sys.exit(app.exec_())
