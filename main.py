@@ -1,88 +1,72 @@
-import tkinter as tk
-from tkinter import ttk
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import sys
 import psutil
-import time
-import threading
-import pandas as pd
-from pandastable import Table
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QLabel
+from PyQt5.QtCore import QTimer, QCoreApplication
 
-class Monitor:
+
+class App(QMainWindow):
     def __init__(self):
-        self.root = tk.Tk()
-        self.fig = Figure(figsize=(10, 8), dpi=100)
-        self.cpu_plot = self.fig.add_subplot(221)
-        self.mem_plot = self.fig.add_subplot(222)
-        self.disk_plot = self.fig.add_subplot(223)
-        self.net_plot = self.fig.add_subplot(224)
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
-        self.canvas.draw()
-        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        super().__init__()
+        self.title = 'System Monitor'
+        self.initUI()
 
-        self.processes_frame = ttk.Frame(self.root)
-        self.processes_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(10, 10, 400, 200)
+        self.table_widget = MyTableWidget(self)
+        self.setCentralWidget(self.table_widget)
+        self.show()
 
-        self.update_plots()
-        self.update_processes()
 
-    def update_plots(self):
-        self.cpu_plot.cla()
-        self.cpu_plot.set_title('CPU usage (%)')
-        self.cpu_plot.plot(psutil.cpu_percent(interval=1, percpu=True))
-        self.cpu_plot.set_ylim(0, 100)
+class MyTableWidget(QWidget):
+    def __init__(self, parent):
+        super(QWidget, self).__init__(parent)
+        self.layout = QVBoxLayout(self)
 
-        self.mem_plot.cla()
-        self.mem_plot.set_title('Memory usage (%)')
-        mem_usage = psutil.virtual_memory().percent
-        self.mem_plot.bar(0, mem_usage)
-        self.mem_plot.set_ylim(0, 100)
-        self.mem_plot.text(0, mem_usage + 1, f'{mem_usage:.2f}%', ha='center', va='bottom')
+        # Initialize tab screen
+        self.tabs = QTabWidget()
+        self.tab1 = QWidget()
+        self.tab2 = QWidget()
+        self.tabs.resize(300, 200)
 
-        self.disk_plot.cla()
-        self.disk_plot.set_title('Disk usage (%)')
+        # Add tabs
+        self.tabs.addTab(self.tab1, "Tab 1")
+        self.tabs.addTab(self.tab2, "Tab 2")
+
+        # Create first tab
+        self.tab1.layout = QVBoxLayout(self)
+        self.label = QLabel()
+        self.tab1.layout.addWidget(self.label)
+        self.tab1.setLayout(self.tab1.layout)
+
+        # Add tabs to widget
+        self.layout.addWidget(self.tabs)
+        self.setLayout(self.layout)
+
+        # Create timer
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_info)
+        self.timer.start(1000)
+
+    def update_info(self):
+        cpu_usage = psutil.cpu_percent()
+        ram_usage = psutil.virtual_memory().percent
         disk_usage = psutil.disk_usage('/').percent
-        self.disk_plot.bar(0, disk_usage)
-        self.disk_plot.set_ylim(0, 100)
-        self.disk_plot.text(0, disk_usage + 1, f'{disk_usage:.2f}%', ha='center', va='bottom')
 
-        self.net_plot.cla()
-        self.net_plot.set_title('Network usage (Bytes sent/received)')
-        net_io = psutil.net_io_counters()
-        self.net_plot.bar([0, 1], [net_io.bytes_sent, net_io.bytes_recv])
-        self.net_plot.set_xticks([0, 1])
-        self.net_plot.set_xticklabels(['Sent', 'Received'])
+        net_io_counters = psutil.net_io_counters()
+        net_sent = net_io_counters.bytes_sent
+        net_recv = net_io_counters.bytes_recv
 
-        self.canvas.draw()
-        self.root.after(1000, self.update_plots)
+        processes = [proc.info['name'] for proc in psutil.process_iter(['name'])]
 
-    def update_processes(self):
-        process_list = []
+        self.label.setText(f'CPU Usage: {cpu_usage}%\n'
+                           f'RAM Usage: {ram_usage}%\n'
+                           f'Disk Usage: {disk_usage}%\n'
+                           f'Network Usage: Sent {net_sent} bytes / Received {net_recv} bytes\n'
+                           f'Running Processes: {processes}\n')
 
-        for proc in psutil.process_iter(['pid', 'name', 'status', 'memory_info', 'io_counters']):
-            try:
-                pid = proc.info['pid']
-                name = proc.info['name']
-                status = proc.info['status']
-                mem_info = proc.info['memory_info'].rss
-                io_counters = proc.info['io_counters']
-                disk_usage = io_counters.read_bytes + io_counters.write_bytes
-                process_list.append([name, pid, status, mem_info, disk_usage])
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                pass
 
-        process_df = pd.DataFrame(process_list,
-                                  columns=['Name', 'PID', 'Status', 'Memory usage (Bytes)', 'Disk usage (Bytes)'])
-        self.processes_frame.destroy()
-        self.processes_frame = tk.Frame(self.root)
-        self.processes_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        self.table = Table(self.processes_frame, dataframe=process_df, showtoolbar=True, showstatusbar=True)
-        self.table.show()
-        self.root.after(1000, self.update_processes)
-
-    def run(self):
-        tk.mainloop()
-
-if __name__ == "__main__":
-    monitor = Monitor()
-    monitor.run()
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = App()
+    sys.exit(app.exec_())
