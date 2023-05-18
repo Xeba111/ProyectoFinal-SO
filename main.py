@@ -71,10 +71,10 @@ class MyTableWidget(QWidget):
 
         # Create second tab
         self.tab2.layout = QGridLayout(self)
-        self.cpu_plot = pg.PlotWidget(title="CPU Usage (%) per Minute")
-        self.ram_plot = pg.PlotWidget(title="RAM Usage (%) per Minute")
-        self.disk_plot = pg.PlotWidget(title="Disk Usage (%) per Minute")
-        self.network_plot = pg.PlotWidget(title="Network Bandwidth Usage (MB) per Minute")
+        self.cpu_plot = pg.PlotWidget(title="CPU Usage (%) per Second")
+        self.ram_plot = pg.PlotWidget(title="RAM Usage (%) per Second")
+        self.disk_plot = pg.PlotWidget(title="Disk Usage (%) per Second")
+        self.network_plot = pg.PlotWidget(title="Network Bandwidth Usage (MB) per Second")
 
         self.cpu_plot.setMaximumHeight(300)
         self.ram_plot.setMaximumHeight(300)
