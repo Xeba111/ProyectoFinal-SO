@@ -61,12 +61,14 @@ class MyTableWidget(QWidget):
         self.table = QTableWidget()
         self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels(['Name', 'PID', 'RAM (MB)', 'Disk I/O (MB)'])
+        
         self.scroll = QScrollArea()
         self.scroll.setWidget(self.table)
         self.scroll.setWidgetResizable(True)
         self.tab1.layout.addWidget(self.label)
         self.tab1.layout.addWidget(self.scroll)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.verticalHeader().setVisible(False)
         self.tab1.setLayout(self.tab1.layout)
 
         # Create second tab
@@ -190,9 +192,6 @@ class MyTableWidget(QWidget):
                            f'Disk Usage: {disk_usage}%\n'
                            f'Network Usage: Sent {net_sent:.2f} MB / Received {net_recv:.2f} MB\n')
 
-
-    def update_graph(self):
-        threading.Thread(target=self.update_info_thread()).start()
 
     def update_graph_thread(self):
         self.cpu_history.append(psutil.cpu_percent())
