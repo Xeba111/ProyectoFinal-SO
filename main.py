@@ -17,10 +17,16 @@ class App(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle(self.title)
-        self.setGeometry(10, 10, 500, 600)
-        self.setMinimumSize(500,600)
+        self.setGeometry(10, 10, 700, 500)
+        self.setMinimumSize(700,500)
+        self.setStyleSheet("background-color: #141414; color: #dddddd")
         self.table_widget = MyTableWidget(self)
         self.setCentralWidget(self.table_widget)
+        self.table_widget.setStyleSheet(
+            "QTabWidget::pane { background-color: #ECECEC; }"
+            "QTabBar::tab { background-color: #240032; border: 1px solid black; padding:5px 100% 5px }"
+            "QTabBar::tab:selected { background-color: #440065; }"
+        )
         self.show()
 
 
@@ -35,9 +41,10 @@ class MyTableWidget(QWidget):
         self.tab2 = QWidget()
         self.tabs.resize(300, 200)
 
+
         # Add tabs
-        self.tabs.addTab(self.tab1, "Tab 1")
-        self.tabs.addTab(self.tab2, "Tab 2")
+        self.tabs.addTab(self.tab1, "Processes")
+        self.tabs.addTab(self.tab2, "Performance")
 
         # Create first tab
         self.tab1.layout = QVBoxLayout(self)
