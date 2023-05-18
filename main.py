@@ -2,7 +2,7 @@ import sys
 import threading
 import time
 import psutil
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QLabel, QScrollArea, \
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QLabel, QHeaderView, QScrollArea, \
     QTableWidget, QTableWidgetItem
 from PyQt5.QtCore import QTimer, QCoreApplication
 import pyqtgraph as pg
@@ -17,7 +17,8 @@ class App(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle(self.title)
-        self.setGeometry(10, 10, 400, 600)
+        self.setGeometry(10, 10, 500, 600)
+        self.setMinimumSize(500,600)
         self.table_widget = MyTableWidget(self)
         self.setCentralWidget(self.table_widget)
         self.show()
@@ -49,6 +50,7 @@ class MyTableWidget(QWidget):
         self.scroll.setWidgetResizable(True)
         self.tab1.layout.addWidget(self.label)
         self.tab1.layout.addWidget(self.scroll)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tab1.setLayout(self.tab1.layout)
 
         # Create second tab
