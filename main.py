@@ -104,15 +104,24 @@ class MyTableWidget(QWidget):
 
         for proc in psutil.process_iter(['name', 'pid', 'memory_info', 'io_counters']):
             mem_info = self.bytes_to_mb(proc.info['memory_info'].rss)
-            io_info_read = self.bytes_to_mb(proc.info['io_counters'].read_bytes)
-            io_info_write = self.bytes_to_mb(proc.info['io_counters'].write_bytes)
+            if proc.info['io_counters'] is not None:
+                io_info_read = self.bytes_to_mb(proc.info['io_counters'].read_bytes)
+                io_info_write = self.bytes_to_mb(proc.info['io_counters'].write_bytes)
 
-            row_position = self.table.rowCount()
-            self.table.insertRow(row_position)
-            self.table.setItem(row_position, 0, QTableWidgetItem(proc.info["name"]))
-            self.table.setItem(row_position, 1, QTableWidgetItem(str(proc.info["pid"])))
-            self.table.setItem(row_position, 2, QTableWidgetItem(f'{mem_info:.2f}'))
-            self.table.setItem(row_position, 3, QTableWidgetItem(f'{io_info_read:.2f}/{io_info_write:.2f}'))
+                row_position = self.table.rowCount()
+                self.table.insertRow(row_position)
+                self.table.setItem(row_position, 0, QTableWidgetItem(proc.info["name"]))
+                self.table.setItem(row_position, 1, QTableWidgetItem(str(proc.info["pid"])))
+                self.table.setItem(row_position, 2, QTableWidgetItem(f'{mem_info:.2f}'))
+                self.table.setItem(row_position, 3, QTableWidgetItem(f'{io_info_read:.2f}/{io_info_write:.2f}'))
+            else:
+            # Handle the case when 'io_counters' is None
+                io_info_read = 0  # Or any other appropriate value
+
+            # io_info_read = self.bytes_to_mb(proc.info['io_counters'].read_bytes)
+            
+
+            
 
         self.label.setText(f'CPU Usage: {cpu_usage}%\n'
                            f'RAM Usage: {ram_usage}%\n'
